@@ -1,0 +1,158 @@
+/* Theme */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 1rem;
+  background: #e0f7fa;
+  color: #00796b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+body.dark {
+  background: #121212;
+  color: #eee;
+}
+button, input {
+  font-family: inherit;
+}
+
+/* Header and Form */
+h1 {
+  margin-bottom: 1rem;
+}
+form {
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+input[type="text"] {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #00796b;
+  border-radius: 4px;
+  width: 220px;
+}
+button {
+  padding: 0.5rem 1rem;
+  margin-left: 0.3rem;
+  font-size: 1rem;
+  border: none;
+  background: #00796b;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
+  background: #004d40;
+}
+
+/* Suggestions */
+#suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #ccc;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+}
+#suggestions li {
+  padding: 0.5rem;
+  cursor: pointer;
+}
+#suggestions li:hover,
+#suggestions li.active {
+  background: #00796b;
+  color: white;
+}
+.no-results {
+  color: #999;
+  cursor: default;
+}
+
+/* Weather Display */
+.weather-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 320px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.weather-icon {
+  width: 100px;
+  height: 100px;
+}
+.error {
+  color: #d32f2f;
+  margin-top: 1rem;
+}
+
+/* Forecast */
+#forecast {
+  width: 100%;
+  max-width: 900px;
+  margin: 2rem auto;
+}
+#forecast-cards {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: nowrap;
+}
+.forecast-card {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+#forecastChart {
+  width: 100%;
+  height: 300px;
+  margin-top: 2rem;
+}
+
+/* Recent Cities */
+#recent-cities {
+  margin-top: 2rem;
+  text-align: center;
+}
+#recent-list {
+  list-style: none;
+  padding: 0;
+}
+#recent-list li {
+  cursor: pointer;
+  padding: 0.4rem;
+}
+#recent-list li:hover {
+  text-decoration: underline;
+}
+#clear-recent {
+  margin-top: 0.5rem;
+}
+
+/* Theme Toggle */
+#theme-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Unit Toggle */
+#unit-toggle {
+  margin: 0.5rem 0;
+  cursor: pointer;
+  font-weight: bold;
+}

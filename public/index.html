@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini Weather Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+  <button id="theme-toggle" title="Toggle theme">🌙</button>
+
+  <h1>Mini Weather Dashboard</h1>
+
+  <form id="search-form">
+    <input type="text" id="city-input" placeholder="Enter city name" autocomplete="off" required />
+    <button type="submit">Get Weather</button>
+    <button type="button" id="geo-btn" title="Use my location">📍</button>
+  </form>
+  <ul id="suggestions"></ul>
+
+  <div id="unit-toggle" title="Switch °C/°F">°F</div>
+
+  <div class="weather-container" id="weather" style="display: none;">
+    <h2 id="location"></h2>
+    <img id="icon" class="weather-icon" src="" alt="Weather icon" />
+    <p><strong>Temperature:</strong> <span id="temp"></span></p>
+    <p id="description"></p>
+    <p><strong>Humidity:</strong> <span id="humidity"></span>%</p>
+    <p><strong>Wind Speed:</strong> <span id="wind"></span> m/s</p>
+  </div>
+
+  <div id="forecast" style="display: none;">
+    <div id="forecast-cards"></div>
+    <canvas id="forecastChart"></canvas>
+  </div>
+
+  <section id="recent-cities" style="display: none;">
+    <h3>Recent Cities</h3>
+    <ul id="recent-list"></ul>
+    <button id="clear-recent">Clear</button>
+  </section>
+
+  <p class="error" id="error-message"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js" type="module"></script>
+</body>
+</html>
