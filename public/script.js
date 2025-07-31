@@ -1,6 +1,6 @@
-const apiKey = process.env.API_KEY;
+const apiKey = '7ffbf6abfaff1128113839610ff07031';
 
-// ========== DOM Elements ==========
+// === DOM Elements ===
 const form = document.getElementById('search-form');
 const cityInput = document.getElementById('city-input');
 const suggestionsList = document.getElementById('suggestions');
@@ -16,91 +16,71 @@ const recentList = document.getElementById('recent-list');
 const recentContainer = document.getElementById('recent-cities');
 const clearRecentBtn = document.getElementById('clear-recent');
 const forecastDiv = document.getElementById('forecast');
-const unitToggle = document.getElementById('unit-toggle');
-const geoBtn = document.getElementById('geo-btn');
-const themeToggle = document.getElementById('theme-toggle');
-
 let lastLocation = { lat: null, lon: null, name: '' };
 let forecastChart;
-let currentSuggestionIndex = -1;
 
-// ========== Theme ==========
+// === Theme ===
+const themeToggle = document.getElementById('theme-toggle');
 const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 let savedTheme = localStorage.getItem('theme') || (systemPrefersDark ? 'dark' : 'light');
 applyTheme(savedTheme);
-
 themeToggle.addEventListener('click', () => {
   const newTheme = document.body.classList.contains('dark') ? 'light' : 'dark';
   localStorage.setItem('theme', newTheme);
   applyTheme(newTheme);
 });
-
 function applyTheme(theme) {
   document.body.classList.toggle('dark', theme === 'dark');
   themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
 }
 
-// ========== Temperature Units ==========
+// === Temperature Unit Utility ===
 function getTempUnitAndSymbol() {
   const unit = localStorage.getItem('unit') || 'metric';
   const symbol = unit === 'metric' ? '°C' : '°F';
   return { unit, symbol };
 }
 
-// Init unit toggle button text
-unitToggle.textContent = getTempUnitAndSymbol().unit === 'metric' ? '°F' : '°C';
-
-unitToggle.addEventListener('click', () => {
-  const current = localStorage.getItem('unit') || 'metric';
-  const newUnit = current === 'metric' ? 'imperial' : 'metric';
-  localStorage.setItem('unit', newUnit);
-  unitToggle.textContent = newUnit === 'metric' ? '°F' : '°C';
-
-  if (lastLocation.lat && lastLocation.lon) {
-    fetchWeather(lastLocation.lat, lastLocation.lon, lastLocation.name);
-    fetchForecast(lastLocation.lat, lastLocation.lon);
-  }
-});
-
-// ========== Search ==========
+// === Search Submit ===
 form.addEventListener('submit', e => {
   e.preventDefault();
   const city = cityInput.value.trim();
   if (!city) return;
-
   errorEl.textContent = '';
   weatherDiv.classList.remove('visible');
   forecastDiv.classList.remove('visible');
   fetchCoordinates(city);
 });
 
+// === Coordinates from City Name ===
 function fetchCoordinates(city) {
   fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=5&appid=${apiKey}`)
     .then(res => res.json())
     .then(data => {
-      if (!data.length) throw new Error('City not found');
+      if (data.length === 0) throw new Error('City not found');
       const place = data[0];
-      const name = `${place.name}${place.state ? ', ' + place.state : ''}, ${place.country}`;
-      fetchWeather(place.lat, place.lon, name);
+      const locationText = `${place.name}${place.state ? ', ' + place.state : ''}, ${place.country}`;
+      fetchWeather(place.lat, place.lon, locationText);
       fetchForecast(place.lat, place.lon);
-      saveRecentCity(name, place.lat, place.lon);
+      saveRecentCity(locationText, place.lat, place.lon);
     })
     .catch(err => {
       errorEl.textContent = err.message;
     });
 }
 
-// ========== Weather ==========
-function fetchWeather(lat, lon, name) {
-  lastLocation = { lat, lon, name };
+// === Fetch Weather ===
+function fetchWeather(lat, lon, locationText) {
+  lastLocation = { lat, lon, name: locationText };
   const { unit, symbol } = getTempUnitAndSymbol();
-  fetch(`/weather?lat=${lat}&lon=${lon}&units=${unit}`)
+  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${unit}&appid=${apiKey}`;
+  fetch(url)
     .then(res => {
       if (!res.ok) throw new Error('Weather data not available');
       return res.json();
     })
     .then(data => {
-      locationEl.textContent = name;
+      locationEl.textContent = locationText;
       tempEl.textContent = Math.round(data.main.temp) + symbol;
       descEl.textContent = data.weather[0].description;
       humidityEl.textContent = data.main.humidity;
@@ -114,10 +94,11 @@ function fetchWeather(lat, lon, name) {
     });
 }
 
-// ========== Forecast ==========
+// === Fetch Forecast ===
 function fetchForecast(lat, lon) {
   const { unit, symbol } = getTempUnitAndSymbol();
-  fetch(`/forecast?lat=${lat}&lon=${lon}&units=${unit}`)
+  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${unit}&appid=${apiKey}`;
+  fetch(url)
     .then(res => {
       if (!res.ok) throw new Error('Forecast data not available');
       return res.json();
@@ -132,91 +113,101 @@ function fetchForecast(lat, lon) {
     });
 }
 
+// === Update Forecast UI ===
 function updateForecastUI(forecastList, symbol) {
-  const container = document.getElementById('forecast-cards');
-  container.innerHTML = '';
-
+  const forecastCards = document.getElementById('forecast-cards');
+  forecastCards.innerHTML = '';
   const daily = {};
   forecastList.forEach(entry => {
     const date = entry.dt_txt.split(' ')[0];
-    (daily[date] ||= []).push(entry);
+    if (!daily[date]) daily[date] = [];
+    daily[date].push(entry);
   });
-
-  Object.entries(daily).slice(0, 5).forEach(([date, entries]) => {
+  const days = Object.keys(daily).slice(0, 5);
+  days.forEach(date => {
+    const entries = daily[date];
     const temps = entries.map(e => e.main.temp);
     const icon = entries[2]?.weather[0]?.icon || entries[0].weather[0].icon;
     const desc = entries[2]?.weather[0]?.main || entries[0].weather[0].main;
     const min = Math.min(...temps);
     const max = Math.max(...temps);
-
-    const dayName = new Date(date).toLocaleDateString(undefined, {
-      weekday: 'short', month: 'short', day: 'numeric'
-    });
-
     const card = document.createElement('div');
     card.className = 'forecast-card';
+    const dayName = new Date(date).toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
     card.innerHTML = `
       <p>${dayName}</p>
       <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${desc}">
       <p>${Math.round(min)}${symbol} / ${Math.round(max)}${symbol}</p>
       <p style="font-size: 0.8rem;">${desc}</p>
     `;
-    container.appendChild(card);
+    forecastCards.appendChild(card);
   });
 }
 
+// === Update Forecast Chart ===
 function updateForecastChart(forecastList, symbol) {
+  const middayPoints = forecastList.filter(entry => entry.dt_txt.includes('12:00:00')).slice(0, 5);
+  const labels = middayPoints.map(e =>
+    new Date(e.dt_txt).toLocaleDateString(undefined, { weekday: 'short' })
+  );
+  const temps = middayPoints.map(e => e.main.temp);
   const ctx = document.getElementById('forecastChart').getContext('2d');
-  const points = forecastList.filter(e => e.dt_txt.includes('12:00:00')).slice(0, 5);
-
   if (forecastChart) forecastChart.destroy();
-
   forecastChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: points.map(e =>
-        new Date(e.dt_txt).toLocaleDateString(undefined, { weekday: 'short' })
-      ),
+      labels: labels,
       datasets: [{
         label: `Midday Temp (${symbol})`,
-        data: points.map(e => e.main.temp),
+        data: temps,
         fill: true,
         borderColor: '#00796b',
         backgroundColor: 'rgba(0,121,107,0.2)',
         tension: 0.3
       }]
     },
-    options: { scales: { y: { beginAtZero: false } } }
+    options: {
+      scales: {
+        y: { beginAtZero: false }
+      }
+    }
   });
 }
 
-// ========== Autocomplete ==========
+// === Autocomplete with Keyboard Navigation ===
+let currentSuggestionIndex = -1;
+
 cityInput.addEventListener('input', () => {
   const query = cityInput.value.trim();
   suggestionsList.innerHTML = '';
   currentSuggestionIndex = -1;
+
   if (query.length < 3) return;
 
   fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${apiKey}`)
     .then(res => res.json())
     .then(data => {
-      if (!data.length) {
+      if (data.length === 0) {
         const li = document.createElement('li');
         li.textContent = 'No results found';
         li.classList.add('no-results');
         suggestionsList.appendChild(li);
         return;
       }
-      data.forEach(place => {
-        const name = `${place.name}${place.state ? ', ' + place.state : ''}, ${place.country}`;
+
+      data.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = name;
+        li.textContent = `${item.name}${item.state ? ', ' + item.state : ''}, ${item.country}`;
         li.addEventListener('click', () => {
-          cityInput.value = name;
+          cityInput.value = li.textContent;
           suggestionsList.innerHTML = '';
-          fetchWeather(place.lat, place.lon, name);
-          fetchForecast(place.lat, place.lon);
-          saveRecentCity(name, place.lat, place.lon);
+          fetchWeather(item.lat, item.lon, li.textContent);
+          fetchForecast(item.lat, item.lon);
+          saveRecentCity(li.textContent, item.lat, item.lon);
         });
         suggestionsList.appendChild(li);
       });
@@ -231,9 +222,11 @@ cityInput.addEventListener('keydown', e => {
     currentSuggestionIndex = (currentSuggestionIndex + 1) % items.length;
   } else if (e.key === 'ArrowUp') {
     currentSuggestionIndex = (currentSuggestionIndex - 1 + items.length) % items.length;
-  } else if (e.key === 'Enter' && currentSuggestionIndex >= 0) {
-    e.preventDefault();
-    items[currentSuggestionIndex].click();
+  } else if (e.key === 'Enter') {
+    if (currentSuggestionIndex >= 0) {
+      e.preventDefault();
+      items[currentSuggestionIndex].click();
+    }
   }
 
   items.forEach((li, i) => {
@@ -241,43 +234,54 @@ cityInput.addEventListener('keydown', e => {
   });
 });
 
-// ========== Recent Cities ==========
+// === Recent Cities ===
 function saveRecentCity(name, lat, lon) {
   const existing = JSON.parse(localStorage.getItem('recentCities')) || [];
   const updated = [{ name, lat, lon }, ...existing.filter(c => c.name !== name)].slice(0, 5);
   localStorage.setItem('recentCities', JSON.stringify(updated));
   renderRecentCities();
 }
-
 function renderRecentCities() {
   const cities = JSON.parse(localStorage.getItem('recentCities')) || [];
   recentList.innerHTML = '';
-  if (!cities.length) {
+  if (cities.length === 0) {
     recentContainer.style.display = 'none';
     return;
   }
-
-  cities.forEach(({ name, lat, lon }) => {
+  cities.forEach(city => {
     const li = document.createElement('li');
-    li.textContent = name;
+    li.textContent = city.name;
     li.addEventListener('click', () => {
-      cityInput.value = name;
-      fetchWeather(lat, lon, name);
-      fetchForecast(lat, lon);
+      cityInput.value = city.name;
+      fetchWeather(city.lat, city.lon, city.name);
+      fetchForecast(city.lat, city.lon);
     });
     recentList.appendChild(li);
   });
-
   recentContainer.style.display = 'block';
 }
-
 clearRecentBtn.addEventListener('click', () => {
   localStorage.removeItem('recentCities');
   renderRecentCities();
 });
 
-// ========== Geolocation ==========
-geoBtn.addEventListener('click', () => {
+// === Unit Toggle ===
+document.getElementById('unit-toggle').addEventListener('click', () => {
+  const current = localStorage.getItem('unit') || 'metric';
+  const newUnit = current === 'metric' ? 'imperial' : 'metric';
+  localStorage.setItem('unit', newUnit);
+  const { symbol } = getTempUnitAndSymbol();
+  document.getElementById('unit-toggle').textContent = newUnit === 'metric' ? '°F' : '°C';
+  if (lastLocation.lat && lastLocation.lon) {
+    fetchWeather(lastLocation.lat, lastLocation.lon, lastLocation.name);
+    fetchForecast(lastLocation.lat, lastLocation.lon);
+  }
+});
+document.getElementById('unit-toggle').textContent =
+  getTempUnitAndSymbol().unit === 'metric' ? '°F' : '°C';
+
+// === Geolocation ===
+document.getElementById('geo-btn').addEventListener('click', () => {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       pos => reverseGeocodeAndFetchWeather(pos.coords.latitude, pos.coords.longitude),
@@ -287,7 +291,6 @@ geoBtn.addEventListener('click', () => {
     errorEl.textContent = 'Geolocation not supported.';
   }
 });
-
 function reverseGeocodeAndFetchWeather(lat, lon) {
   fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`)
     .then(res => res.json())
@@ -304,7 +307,7 @@ function reverseGeocodeAndFetchWeather(lat, lon) {
     });
 }
 
-// ========== Init ==========
+// === Init ===
 renderRecentCities();
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
