@@ -8,7 +8,7 @@ A responsive weather app that shows the current weather and 5-day forecast for a
 - Recent cities memory
 - Forecast chart
 
-🚀 **Live Demo:** [View on GitHub Pages]
+🚀 **Live Demo:** [View on GitHub Pages] (https://appelboom52.github.io/weather-dashboard/)
 
 ---
 
